@@ -17,4 +17,4 @@ Does a commit with the provided message.
 Does a revert on the current file. This command presents an 'are you sure' confirmation.
 
 #### :SvnAdd
-Does and add for the current file.
+Does an add for the current file.
