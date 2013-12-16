@@ -1,6 +1,6 @@
 syntax match stRule /-\{5,}/
 syntax match stVertRule /^|/ contained
-syntax match stAction / \(q\|r\|<CR>\|=\|+\|-\|I\) / contained
+syntax match stAction / \(q\|R\|<CR>\|D\|+\|-\) / contained
 syntax region stActionLine start=/^|/ end=/$/ contains=stAction,stVertRule
 syntax match stChangeStatus /^\s*\(M\|A\|D\)/
 syntax match stScheduleStatus /^\s*\(?\|!\)/
