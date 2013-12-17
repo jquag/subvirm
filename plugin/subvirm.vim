@@ -1,5 +1,3 @@
-"TODO Support commit message using editor for the message
-
 command! SvnStatus call SvnStatus()
 command! SvnDiff call SvnCompare()
 command! -nargs=1 SvnCommit !svn commit -m <args>
@@ -16,7 +14,10 @@ function! s:setupScratchBuffer()
 endfunction
 
 function! SvnAnnotate(toAnnotate, lineNbr)
-    execute "tabe " . a:toAnnotate . "--annotated"  
+    set scrollbind
+    execute "30vs " . a:toAnnotate . "--annotated"
+    setlocal nowrap
+    set scrollbind
     call s:setupScratchBuffer()
     setlocal syntax=subvirm_annotated
     execute "silent %! svn ann " . a:toAnnotate 
@@ -27,8 +28,9 @@ endfunction
 function! SvnLogFromAnnotate()
     let revision = matchstr(getline("."), '\d\+')
     let theFile = @%[0:len(@%)-len(" --annotated")]
-    execute "5sp " . theFile . "@" . revision . "--log"
+    execute "to 5sp " . theFile . "@" . revision . "--log"
     call s:setupScratchBuffer()
+    set noscrollbind
     setlocal syntax=subvirm_log
     setlocal wfh
     execute "silent %! svn log " . theFile . "@" . revision . " -l 1"
