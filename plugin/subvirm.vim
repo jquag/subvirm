@@ -14,15 +14,18 @@ function! s:setupScratchBuffer()
 endfunction
 
 function! SvnAnnotate(toAnnotate, lineNbr)
-    set scrollbind
+    set noscrollbind
+    execute ":0"
     execute "30vs " . a:toAnnotate . "--annotated"
     setlocal nowrap
-    set scrollbind
     call s:setupScratchBuffer()
     setlocal syntax=subvirm_annotated
     execute "silent %! svn ann " . a:toAnnotate 
-    execute ":" . a:lineNbr
+    set scrollbind
     nmap <buffer> <CR> :call SvnLogFromAnnotate()<CR>
+    wincmd p
+    set scrollbind
+    execute ":" . a:lineNbr
 endfunction
 
 function! SvnLogFromAnnotate()
