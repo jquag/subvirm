@@ -1,14 +1,10 @@
 "TODO Support commit message using editor for the message
-"TODO Maybe don't make all commands silent
-
-"TODO Don't attempt file specific commands when there is no current file
-"TODO Don't define anything if not in an svn working copy
 
 command! SvnStatus call SvnStatus()
 command! SvnDiff call SvnCompare()
 command! -nargs=1 SvnCommit !svn commit -m <args>
-command! SvnRevert call SvnRevert(@%)
-command! SvnAdd call SvnAdd(@%)
+command! SvnRevert call SvnRevert(@%, 1)
+command! SvnAdd call SvnAdd(@%, 1)
 command! SvnAnnotate call SvnAnnotate(@%, line("."))
 command! SvnIgnore call SvnIgnore(@%)
 
@@ -103,10 +99,10 @@ endfunction
 
 function! SvnScheduleFromStatus()
     if getline('.')[0:0] == '?'
-        call SvnAdd(eval("strpart(getline('.'), 8)"))
+        call SvnAdd(eval("strpart(getline('.'), 8)"), 0)
         call SvnRefreshStatus(line('.'))
     elseif getline('.')[0:0] == '!'
-        execute "silent !svn delete " . eval("strpart(getline('.'), 8)")
+        execute "!svn delete " . eval("strpart(getline('.'), 8)")
         redraw!
         call SvnRefreshStatus(line('.'))
     else
@@ -128,7 +124,7 @@ function! SvnRevertOrIgnoreFromStatus()
     let l = getline('.')[0:0] 
     let theFile = strpart(getline('.'), 8)
     if l == 'M' || l == 'A' || l == 'D'
-        call SvnRevert(theFile)
+        call SvnRevert(theFile, 0)
         call SvnRefreshStatus(line('.'))
     elseif l == '?'
         call SvnIgnore(theFile)
@@ -146,17 +142,25 @@ function! SvnCompare()
     diffthis
 endfunction
 
-function! SvnRevert(toRevert)
+function! SvnRevert(toRevert, showOutput)
     call inputsave()
     let confirmation = input('Are you sure you want to revert ' . a:toRevert . '? (y|n) ')
     call inputrestore()
     if confirmation == 'y' || confirmation == 'Y'
-        execute "silent !svn revert " . a:toRevert
-        redraw!
+        if a:showOutput
+            let prefix = ''
+        else
+            let prefix = 'silent '
+        endif
+        execute prefix . "!svn revert " . a:toRevert
     endif
 endfunction
 
-function! SvnAdd(toAdd)
-    execute "silent !svn add " . a:toAdd
-    redraw!
+function! SvnAdd(toAdd, showOutput)
+    if a:showOutput
+        let prefix = ''
+    else
+        let prefix = 'silent '
+    endif
+    execute prefix . "!svn add " . a:toAdd
 endfunction
