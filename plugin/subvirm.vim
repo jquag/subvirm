@@ -54,6 +54,10 @@ function! SvnStatus()
     nmap <buffer> - :call SvnRevertOrIgnoreFromStatus()<CR>
 endfunction
 
+function! Trial(text)
+    execute "normal Go" . a:text
+endfunction
+
 function! SvnIgnore(toIgnore)
     if has("gui_running")
         if has("mac")
@@ -65,6 +69,12 @@ function! SvnIgnore(toIgnore)
         let cmd = 'vim'
     endif
 
+    if has("unix")
+        let escapeQuote = '\"'
+    else
+        let escapedQuote = '""'
+    endif
+
     let filePath = a:toIgnore
     let lastSeparator = matchend(filePath, '.*/')
     if lastSeparator == -1 
@@ -74,7 +84,7 @@ function! SvnIgnore(toIgnore)
         let fileName = filePath[lastSeparator : len(filePath)]
         let folderName = filePath[0 : lastSeparator-2]
     endif
-    execute "silent !svn propedit svn:ignore --editor-cmd \"" . cmd . " -f -c 'normal Go" . fileName . "'\" " . folderName 
+    execute "silent !svn propedit svn:ignore --editor-cmd \"" . cmd . " -f -c " . escapedQuote . 'normal Go' . fileName . escapedQuote . "\" " . folderName 
     redraw!
 endfunction
 
