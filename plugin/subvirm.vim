@@ -70,7 +70,7 @@ function! SvnIgnore(toIgnore)
     endif
 
     if has("unix")
-        let escapeQuote = '\"'
+        let escapedQuote = '\"'
     else
         let escapedQuote = '""'
     endif
