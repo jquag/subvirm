@@ -5,6 +5,7 @@ command! SvnRevert call SvnRevert(@%, 1)
 command! SvnAdd call SvnAdd(@%, 1)
 command! SvnAnnotate call SvnAnnotate(@%, line("."))
 command! SvnIgnore call SvnIgnore(@%)
+command! SvnLog call SvnLog(@%, -1, 5)
 
 function! s:setupScratchBuffer()
     setlocal buftype=nofile
@@ -29,15 +30,43 @@ function! SvnAnnotate(toAnnotate, lineNbr)
     execute ":" . a:lineNbr
 endfunction
 
-function! SvnLogFromAnnotate()
-    let revision = matchstr(getline("."), '\d\+')
-    let theFile = @%[0:len(@%)-len(" --annotated")]
-    execute "to 5sp " . theFile . "@" . revision . "--log"
+function! SvnDiffFromLog()
+    if match(getline('.'), '^r\d\+ | ') == 0
+        let rev = matchstr(getline('.'), '\d\+')
+        let toDiff = b:theFile
+        execute "vs doo"
+        call s:setupScratchBuffer()
+        set syntax=diff
+        execute "silent %! svn diff -c " . rev . " " . toDiff
+    endif
+endfunction
+
+function! SvnLog(toLog, rev, num)
+    if a:num > 1
+        let height = 15
+    else
+        let height = 5
+    endif
+    if a:rev == -1
+        let revString = ''
+    else
+        let revString = '@' . a:rev
+    endif
+
+    execute "to " . height . "sp " . a:toLog . revString . a:rev . "--log"
+    let b:theFile = a:toLog
     call s:setupScratchBuffer()
     set noscrollbind
     setlocal syntax=subvirm_log
     setlocal wfh
-    execute "silent %! svn log " . theFile . "@" . revision . " -l 1"
+    nmap <buffer> <CR> :call SvnDiffFromLog()<CR>
+    execute "silent %! svn log " . a:toLog . revString . " -l " . a:num
+endfunction
+
+function! SvnLogFromAnnotate()
+    let revision = matchstr(getline("."), '\d\+')
+    let theFile = @%[0:len(@%)-len(" --annotated")]
+    call SvnLog(theFile, revision, 1)
 endfunction
 
 function! SvnStatus()
@@ -52,10 +81,6 @@ function! SvnStatus()
     nmap <buffer> R :call SvnRefreshStatus(line('.'))<CR>
     nmap <buffer> <CR> :call SvnOpenFileFromStatus()<CR>
     nmap <buffer> - :call SvnRevertOrIgnoreFromStatus()<CR>
-endfunction
-
-function! Trial(text)
-    execute "normal Go" . a:text
 endfunction
 
 function! SvnIgnore(toIgnore)

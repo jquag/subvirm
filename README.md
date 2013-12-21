@@ -24,3 +24,6 @@ Opens a split with the output of <code>svn annotate</code> for the current file.
 
 #### :SvnIgnore
 Opens the <code>svn:ignore</code> editor for the directory of the current file. It will also append the name of the current file to the end of the list. If the intent is not to ignore the exact name of this file then be sure to change it before save and quit.
+
+#### :SvnLog
+Show the log for the current file. Within the log buffer you can press <code>CR</code> to bring up the diff for the revision for the revision represented by the current line.
