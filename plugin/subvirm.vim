@@ -1,11 +1,54 @@
+let s:path = expand('<sfile>:p:h')
+execute "ruby load '" . s:path . '/subvirm.rb' . "'"
+
 command! SvnStatus call SvnStatus()
-command! SvnDiff call SvnCompare()
+command! SvnDiff call SvnCompare(-1)
 command! -nargs=1 SvnCommit !svn commit -m <args>
 command! SvnRevert call SvnRevert(@%, 1)
 command! SvnAdd call SvnAdd(@%, 1)
 command! SvnAnnotate call SvnAnnotate(@%, line("."))
 command! SvnIgnore call SvnIgnore(@%)
 command! SvnLog call SvnLog(@%, -1, 5)
+command! -nargs=1 SvnSearchLog call SvnSearchLog(<f-args>)
+
+function! SvnSearchLog(term)
+    "TODO check for ruby first, pass limit but deafult to 100, mapping for open, menu?
+    execute 'botright vnew log_search_results'
+    call s:setupScratchBuffer()
+    let b:searchTerm = a:term
+    setlocal syntax=subvirm_search_results
+    nmap <buffer> D :call SvnCompareFromSearch(0)<CR>
+    nmap <buffer> <c-d> :call SvnCompareFromSearch(1)<CR>
+    normal i--------------------
+    normal o
+ruby <<EOF
+search_term = VIM::evaluate('a:term')
+results = search_svn_log(search_term, 100)
+results.each {|line| $curbuf.append($curbuf.length, line)}
+EOF
+endfunction
+
+function! SvnCompareFromSearch(newTab)
+    if getline('.')[0:0] == 'M'
+        let lineNbr = line('.')
+        execute '?rev\.'
+        let rev = matchstr(getline('.'), '\d\+')
+        execute ':' . lineNbr
+
+        let file = eval("strpart(getline('.'), 3)")
+
+        if a:newTab
+            execute "tabe " . file . '@' . rev
+        else
+            execute "botright sp " . file . '@' . rev
+        end
+
+        call s:setupScratchBuffer()
+        execute "silent %! svn cat --non-interactive " . file . '@' . rev
+        let b:file = file
+        call SvnCompare(rev - 1)
+    endif
+endfunction
 
 function! s:setupScratchBuffer()
     setlocal buftype=nofile
@@ -77,9 +120,11 @@ function! SvnStatus()
     setlocal noautoindent
     call SvnRefreshStatus(0)
     nmap <buffer> + :call SvnScheduleFromStatus()<CR>
-    nmap <buffer> D :call SvnCompareFromStatus()<CR>
+    nmap <buffer> D :call SvnCompareFromStatus(0)<CR>
+    nmap <buffer> <c-d> :call SvnCompareFromStatus(1)<CR>
     nmap <buffer> R :call SvnRefreshStatus(line('.'))<CR>
-    nmap <buffer> <CR> :call SvnOpenFileFromStatus()<CR>
+    nmap <buffer> <CR> :call SvnOpenFileFromStatus(0)<CR>
+    nmap <buffer> <c-CR> :call SvnOpenFileFromStatus(1)<CR>
     nmap <buffer> - :call SvnRevertOrIgnoreFromStatus()<CR>
 endfunction
 
@@ -119,8 +164,8 @@ function! SvnRefreshStatus(lineNbr)
     normal o| 
     normal o| q     quit
     normal o| R     refresh view
-    normal o| <CR>  open file in a new tab
-    normal o| D     compare file with latest
+    normal o| <CR>  open in a new tab (ctrl for new tab)
+    normal o| D     compare with latest (ctrl for new tab)
     normal o| +     schedule file for addition/deletion
     normal o| -     revert or ignore file
     normal o| 
@@ -129,10 +174,14 @@ function! SvnRefreshStatus(lineNbr)
     execute ':' . a:lineNbr
 endfunction
 
-function! SvnOpenFileFromStatus()
+function! SvnOpenFileFromStatus(newTab)
     let l = getline('.')[0:0]
     if l == '?' || l == 'M' || l == 'A'
-        execute "tabe " . eval("strpart(getline('.'), 8)") 
+        if a:newTab
+            execute "tabe " . eval("strpart(getline('.'), 8)") 
+        else
+            execute "botright sp " . eval("strpart(getline('.'), 8)") 
+        endif
     else
         echo "nothing to open"
     endif
@@ -152,10 +201,16 @@ function! SvnScheduleFromStatus()
 endfunction
 
 
-function! SvnCompareFromStatus()
+function! SvnCompareFromStatus(newTab)
     if getline('.')[0:0] == 'M'
-        execute "tabe " . eval("strpart(getline('.'), 8)")
-        call SvnCompare()
+        let l:file = eval("strpart(getline('.'), 8)")
+        if a:newTab
+            execute "tabe " .  l:file
+        else
+            execute "botright sp " . l:file
+        endif
+        let b:file = l:file
+        call SvnCompare(-1)
     else
         echo "nothing to compare"
     endif
@@ -173,13 +228,25 @@ function! SvnRevertOrIgnoreFromStatus()
     endif
 endfunction
 
-function! SvnCompare()
-    let l:fileToCompare = @%
-    let l:fileName = expand('%:t')
+function! SvnCompare(rev)
+    if exists('b:file')
+        let l:fileToCompare = b:file
+    else
+        let l:fileToCompare = expand('%@')
+    endif
+
+    if a:rev == -1
+        let l:rev = ''
+        let l:revString = '@latest'
+    else
+        let l:rev = '@' . a:rev
+        let l:revString = '@' . a:rev
+    endif
+
     diffthis
-    execute "vnew from_repo--" . l:fileName
+    execute "vnew " . l:fileToCompare . l:revString
     call s:setupScratchBuffer()
-    execute "silent %! svn cat --non-interactive " . l:fileToCompare
+    execute "silent %! svn cat --non-interactive " . l:fileToCompare . l:rev
     diffthis
 endfunction
 
