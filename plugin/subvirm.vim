@@ -1,5 +1,12 @@
+" Author: John Quagliata
+
+if !exists("g:SuperTabDefaultCompletionType")
+    let g:subvirmSearchLimit = 500
+endif
+
 let s:path = expand('<sfile>:p:h')
 execute "ruby load '" . s:path . '/subvirm.rb' . "'"
+
 
 command! SvnStatus call SvnStatus()
 command! SvnDiff call SvnCompare(-1)
@@ -11,21 +18,31 @@ command! SvnIgnore call SvnIgnore(@%)
 command! SvnLog call SvnLog(@%, -1, 5)
 command! -nargs=1 SvnSearchLog call SvnSearchLog(<f-args>)
 
+
 function! SvnSearchLog(term)
-    "TODO check for ruby first, pass limit but deafult to 100, mapping for open, menu?
+    if !has('ruby')
+        echo 'vim must be compiled with ruby support for this command'
+        return
+    endif
+
     execute 'botright vnew log_search_results'
     call s:setupScratchBuffer()
     let b:searchTerm = a:term
     setlocal syntax=subvirm_search_results
     nmap <buffer> D :call SvnCompareFromSearch(0)<CR>
     nmap <buffer> <c-d> :call SvnCompareFromSearch(1)<CR>
+    nmap <buffer> <CR> :call SvnOpenFileFromScratch(0)<CR>
+    nmap <buffer> <c-CR> :call SvnOpenFileFromScratch(1)<CR>
     normal i--------------------
     normal o
+
 ruby <<EOF
 search_term = VIM::evaluate('a:term')
-results = search_svn_log(search_term, 100)
+limit = VIM::evaluate('g:subvirmSearchLimit')
+results = search_svn_log(search_term, limit)
 results.each {|line| $curbuf.append($curbuf.length, line)}
 EOF
+
 endfunction
 
 function! SvnCompareFromSearch(newTab)
@@ -123,8 +140,8 @@ function! SvnStatus()
     nmap <buffer> D :call SvnCompareFromStatus(0)<CR>
     nmap <buffer> <c-d> :call SvnCompareFromStatus(1)<CR>
     nmap <buffer> R :call SvnRefreshStatus(line('.'))<CR>
-    nmap <buffer> <CR> :call SvnOpenFileFromStatus(0)<CR>
-    nmap <buffer> <c-CR> :call SvnOpenFileFromStatus(1)<CR>
+    nmap <buffer> <CR> :call SvnOpenFileFromScratch(0)<CR>
+    nmap <buffer> <c-CR> :call SvnOpenFileFromScratch(1)<CR>
     nmap <buffer> - :call SvnRevertOrIgnoreFromStatus()<CR>
 endfunction
 
@@ -174,13 +191,14 @@ function! SvnRefreshStatus(lineNbr)
     execute ':' . a:lineNbr
 endfunction
 
-function! SvnOpenFileFromStatus(newTab)
+function! SvnOpenFileFromScratch(newTab)
     let l = getline('.')[0:0]
     if l == '?' || l == 'M' || l == 'A'
+        let l:file = strpart(getline('.'), matchend(getline('.'), '[M?A]\s\+')) 
         if a:newTab
-            execute "tabe " . eval("strpart(getline('.'), 8)") 
+            execute "tabe " . l:file
         else
-            execute "botright sp " . eval("strpart(getline('.'), 8)") 
+            execute "botright sp " . l:file
         endif
     else
         echo "nothing to open"

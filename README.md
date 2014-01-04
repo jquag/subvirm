@@ -10,7 +10,7 @@ Opens a split window with the output of <code>svn status</code>. In addition, th
 #### :SvnDiff
 Retrieves the latest content of the current file from the repository and displays a Vim diff from the working copy.
 
-#### :SvnCommit &lt;message&gt;
+#### :SvnCommit MESSAGE
 Does a commit with the provided message.
 
 #### :SvnRevert
@@ -27,3 +27,10 @@ Opens the <code>svn:ignore</code> editor for the directory of the current file. 
 
 #### :SvnLog
 Show the log for the current file. Within the log buffer you can press <code>CR</code> to bring up the diff for the revision for the revision represented by the current line.
+
+#### :SvnSearchLog SEARCHTERM
+Searches the log for the given SEARCHTERM and displays the result in a scratch buffer. Within this buffer you can press <code>D</code> or <code>c-d</code> on a path to bring up the diff. Or press <code>CR</code> or <code>c-CR</code> on the path to open the file. 
+
+By default it will search the last 500 log entries. If you want to change this set the <code>g:subvrimSearchLimit</code> to whatever.
+
+This command requires that vim be compiled with Ruby support.
