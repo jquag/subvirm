@@ -1,6 +1,6 @@
 " Author: John Quagliata
 
-if !exists("g:SuperTabDefaultCompletionType")
+if !exists("g:subvirmSearchLimit")
     let g:subvirmSearchLimit = 500
 endif
 
@@ -53,15 +53,16 @@ function! SvnCompareFromSearch(newTab)
         execute ':' . lineNbr
 
         let file = eval("strpart(getline('.'), 3)")
+        let l:bufName = substitute(file, " ", "_", "g")
 
         if a:newTab
-            execute "tabe " . file . '@' . rev
+            execute "tabe " . l:bufName . '@' . rev
         else
-            execute "botright sp " . file . '@' . rev
+            execute "botright sp " . l:bufName . '@' . rev
         end
 
         call s:setupScratchBuffer()
-        execute "silent %! svn cat --non-interactive " . file . '@' . rev
+        execute "silent %! svn cat --non-interactive '" . file . '@' . rev . "'"
         let b:file = file
         call SvnCompare(rev - 1)
     endif
@@ -77,12 +78,13 @@ endfunction
 function! SvnAnnotate(toAnnotate, lineNbr)
     set noscrollbind
     execute ":0"
-    execute "30vs " . a:toAnnotate . "--annotated"
+    execute "30vs " . substitute(a:toAnnotate, " ", "_", "g") . "--annotated"
+    let b:toAnnotate = a:toAnnotate
     setlocal nowrap
     au BufDelete <buffer> windo set noscb
     call s:setupScratchBuffer()
     setlocal syntax=subvirm_annotated
-    execute "silent %! svn ann " . a:toAnnotate 
+    execute "silent %! svn ann '" . a:toAnnotate . "'"
     setlocal scrollbind
     nmap <buffer> <CR> :call SvnLogFromAnnotate()<CR>
     wincmd p
@@ -94,10 +96,10 @@ function! SvnDiffFromLog()
     if match(getline('.'), '^r\d\+ | ') == 0
         let rev = matchstr(getline('.'), '\d\+')
         let toDiff = b:theFile
-        execute "vs doo"
+        execute "vs revision_diff"
         call s:setupScratchBuffer()
         set syntax=diff
-        execute "silent %! svn diff -c " . rev . " " . toDiff
+        execute "silent %! svn diff -c " . rev . " '" . toDiff . "'"
     endif
 endfunction
 
@@ -113,20 +115,20 @@ function! SvnLog(toLog, rev, num)
         let revString = '@' . a:rev
     endif
 
-    execute "to " . height . "sp " . a:toLog . revString . a:rev . "--log"
+    execute "to " . height . "sp " . substitute(a:toLog, " ", "_", "g") . revString . a:rev . "--log"
     let b:theFile = a:toLog
     call s:setupScratchBuffer()
     set noscrollbind
     setlocal syntax=subvirm_log
     setlocal wfh
     nmap <buffer> <CR> :call SvnDiffFromLog()<CR>
-    execute "silent %! svn log " . a:toLog . revString . " -l " . a:num
+    execute "silent %! svn log '" . a:toLog . revString . "' -l " . a:num
 endfunction
 
 function! SvnLogFromAnnotate()
     let revision = matchstr(getline("."), '\d\+')
     let theFile = @%[0:len(@%)-len(" --annotated")]
-    call SvnLog(theFile, revision, 1)
+    call SvnLog(b:toAnnotate, revision, 1)
 endfunction
 
 function! SvnStatus()
@@ -171,7 +173,7 @@ function! SvnIgnore(toIgnore)
         let fileName = filePath[lastSeparator : len(filePath)]
         let folderName = filePath[0 : lastSeparator-2]
     endif
-    execute "silent !svn propedit svn:ignore --editor-cmd \"" . cmd . " -f -c " . escapedQuote . 'normal Go' . fileName . escapedQuote . "\" " . folderName 
+    execute "silent !svn propedit svn:ignore --editor-cmd \"" . cmd . " -f -c " . escapedQuote . 'normal Go' . fileName . escapedQuote . "\" \"" . folderName . "\"" 
     redraw!
 endfunction
 
@@ -210,7 +212,7 @@ function! SvnScheduleFromStatus()
         call SvnAdd(eval("strpart(getline('.'), 8)"), 0)
         call SvnRefreshStatus(line('.'))
     elseif getline('.')[0:0] == '!'
-        execute "!svn delete " . eval("strpart(getline('.'), 8)")
+        execute "!svn delete '" . eval("strpart(getline('.'), 8)") . "'"
         redraw!
         call SvnRefreshStatus(line('.'))
     else
@@ -262,9 +264,9 @@ function! SvnCompare(rev)
     endif
 
     diffthis
-    execute "vnew " . l:fileToCompare . l:revString
+    execute "vnew " . substitute(l:fileToCompare, " ", "_", "g") . l:revString
     call s:setupScratchBuffer()
-    execute "silent %! svn cat --non-interactive " . l:fileToCompare . l:rev
+    execute "silent %! svn cat --non-interactive '" . l:fileToCompare . "'" . l:rev
     diffthis
 endfunction
 
@@ -278,7 +280,7 @@ function! SvnRevert(toRevert, showOutput)
         else
             let prefix = 'silent '
         endif
-        execute prefix . "!svn revert " . a:toRevert
+        execute prefix . "!svn revert '" . a:toRevert . "'"
     endif
 endfunction
 
@@ -288,5 +290,5 @@ function! SvnAdd(toAdd, showOutput)
     else
         let prefix = 'silent '
     endif
-    execute prefix . "!svn add " . a:toAdd
+    execute prefix . "!svn add '" . a:toAdd . "'"
 endfunction
