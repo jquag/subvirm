@@ -2,6 +2,7 @@ require 'rexml/document'
 require 'time'
 
 def search_svn_log(search_term, limit)
+    #TODO JQ: dont strip the root and instead make the commands from the search page use the URL syntax instead of file
     output = []
     doc = REXML::Document.new(`svn log --xml -vl #{limit}`)
     any_results = false

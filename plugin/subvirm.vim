@@ -62,7 +62,7 @@ function! SvnCompareFromSearch(newTab)
         end
 
         call s:setupScratchBuffer()
-        execute "silent %! svn cat --non-interactive '" . file . '@' . rev . "'"
+        execute "silent %! svn cat --non-interactive \"" . file . '@' . rev . "\""
         let b:file = file
         call SvnCompare(rev - 1)
     endif
@@ -84,7 +84,7 @@ function! SvnAnnotate(toAnnotate, lineNbr)
     au BufDelete <buffer> windo set noscb
     call s:setupScratchBuffer()
     setlocal syntax=subvirm_annotated
-    execute "silent %! svn ann '" . a:toAnnotate . "'"
+    execute "silent %! svn ann \"" . a:toAnnotate . "\""
     setlocal scrollbind
     nmap <buffer> <CR> :call SvnLogFromAnnotate()<CR>
     wincmd p
@@ -99,7 +99,7 @@ function! SvnDiffFromLog()
         execute "vs revision_diff"
         call s:setupScratchBuffer()
         set syntax=diff
-        execute "silent %! svn diff -c " . rev . " '" . toDiff . "'"
+        execute "silent %! svn diff -c " . rev . " \"" . toDiff . "\""
     endif
 endfunction
 
@@ -122,7 +122,7 @@ function! SvnLog(toLog, rev, num)
     setlocal syntax=subvirm_log
     setlocal wfh
     nmap <buffer> <CR> :call SvnDiffFromLog()<CR>
-    execute "silent %! svn log '" . a:toLog . revString . "' -l " . a:num
+    execute "silent %! svn log \"" . a:toLog . revString . "\" -l " . a:num
 endfunction
 
 function! SvnLogFromAnnotate()
@@ -212,7 +212,7 @@ function! SvnScheduleFromStatus()
         call SvnAdd(eval("strpart(getline('.'), 8)"), 0)
         call SvnRefreshStatus(line('.'))
     elseif getline('.')[0:0] == '!'
-        execute "!svn delete '" . eval("strpart(getline('.'), 8)") . "'"
+        execute "!svn delete \"" . eval("strpart(getline('.'), 8)") . "\""
         redraw!
         call SvnRefreshStatus(line('.'))
     else
@@ -266,7 +266,7 @@ function! SvnCompare(rev)
     diffthis
     execute "vnew " . substitute(l:fileToCompare, " ", "_", "g") . l:revString
     call s:setupScratchBuffer()
-    execute "silent %! svn cat --non-interactive '" . l:fileToCompare . "'" . l:rev
+    execute "silent %! svn cat --non-interactive \"" . l:fileToCompare . "\"" . l:rev
     diffthis
 endfunction
 
@@ -280,7 +280,7 @@ function! SvnRevert(toRevert, showOutput)
         else
             let prefix = 'silent '
         endif
-        execute prefix . "!svn revert '" . a:toRevert . "'"
+        execute prefix . "!svn revert \"" . a:toRevert . "\""
     endif
 endfunction
 
@@ -290,5 +290,5 @@ function! SvnAdd(toAdd, showOutput)
     else
         let prefix = 'silent '
     endif
-    execute prefix . "!svn add '" . a:toAdd . "'"
+    execute prefix . "!svn add \"" . a:toAdd . "\""
 endfunction
